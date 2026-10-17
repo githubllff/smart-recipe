@@ -243,13 +243,17 @@ export class MonsieurCuisineSmartClient {
     const data = getRecord(result, "data");
     const body = getRecord(result, "body");
 
-    const media =
+    let media =
       getRecord(data, "media") ??
       getRecord(result, "media") ??
       getRecord(body, "media") ??
       data ??
       body ??
       result;
+
+    if (!Array.isArray(media)) {
+      media = getRecord(media, "media") ?? media;
+    }
 
     this.assertVendorResponse(McMediaListResponseSchema, media, `api/v1/media?${query}`);
     return media;
