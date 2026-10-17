@@ -243,7 +243,7 @@ export class MonsieurCuisineSmartClient {
     const data = getRecord(result, "data");
     const body = getRecord(result, "body");
 
-    let media =
+    let media: unknown =
       getRecord(data, "media") ??
       getRecord(result, "media") ??
       getRecord(body, "media") ??
