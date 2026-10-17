@@ -10,7 +10,7 @@ import type { SmartRecipePayload } from "../recipes/types.js";
 import { assertSmartRecipePayload } from "../recipes/validation.js";
 import type { SupportedLocale } from "../catalogs/types.js";
 import { validateApiResponse } from "../devices/response-validation.js";
-import { getRecord } from "../utils/unknown.js";
+import { getRecord, isRecord } from "../utils/unknown.js";
 
 export interface MonsieurCuisineSmartClientOptions {
   cookie?: string;
@@ -251,8 +251,8 @@ export class MonsieurCuisineSmartClient {
       body ??
       result;
 
-    if (!Array.isArray(media)) {
-      media = getRecord(media, "media") ?? media;
+    if (!Array.isArray(media) && isRecord(media) && Array.isArray(media.media)) {
+      media = media.media;
     }
 
     this.assertVendorResponse(McMediaListResponseSchema, media, `api/v1/media?${query}`);
