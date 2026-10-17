@@ -29,7 +29,7 @@ export function createSmartRecipePayload(options: CreateSmartRecipePayloadOption
     },
     complexityId: options.settings?.complexityId ?? 142,
     allowSocialSharing: false,
-    categoryIds: options.categoryIds ?? [],
+    categoryIds: [],
     nutrients: (options.nutrients ?? []).map((nutrient) => ({
       name: nutrient.name,
       unit: nutrient.unit,
