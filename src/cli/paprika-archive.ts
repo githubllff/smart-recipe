@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { gunzipSync } from "node:zlib";
+import { gunzipSync, inflateRawSync } from "node:zlib";
 
 function loadDotEnv(file = ".env"): void {
   if (!existsSync(file)) return;
@@ -113,6 +113,7 @@ interface PaprikaRecipe {
 interface ZipEntry {
   name: string;
   data: Buffer;
+  compressionMethod: number;
 }
 
 function readZipEntries(buffer: Buffer): ZipEntry[] {
@@ -138,6 +139,7 @@ function readZipEntries(buffer: Buffer): ZipEntry[] {
       break;
     }
 
+    const compressionMethod = buffer.readUInt16LE(centralDirectoryOffset + 10);
     const compressedSize = buffer.readUInt32LE(centralDirectoryOffset + 20);
     const nameLength = buffer.readUInt16LE(centralDirectoryOffset + 28);
     const extraLength = buffer.readUInt16LE(centralDirectoryOffset + 30);
@@ -156,7 +158,8 @@ function readZipEntries(buffer: Buffer): ZipEntry[] {
 
     entries.push({
       name,
-      data: buffer.subarray(dataStart, dataStart + compressedSize)
+      data: buffer.subarray(dataStart, dataStart + compressedSize),
+      compressionMethod
     });
 
     centralDirectoryOffset += 46 + nameLength + extraLength + commentLength;
@@ -203,9 +206,15 @@ function parsePaprikaArchive(filePath: string): PaprikaRecipe[] {
   for (const entry of entries) {
     if (!entry.name.endsWith(".paprikarecipe")) continue;
 
-    const decompressed = entry.data.subarray(0, 2).equals(Buffer.from([0x1f, 0x8b]))
-      ? gunzipSync(entry.data)
-      : entry.data;
+    let entryData = entry.data;
+
+    if (entry.compressionMethod === 8) {
+      entryData = inflateRawSync(entryData);
+    }
+
+    const decompressed = entryData.subarray(0, 2).equals(Buffer.from([0x1f, 0x8b]))
+      ? gunzipSync(entryData)
+      : entryData;
 
     const recipe = JSON.parse(decompressed.toString("utf8")) as Record<string, unknown>;
     recipes.push(mapPaprikaRecipe(recipe, entry.name));
